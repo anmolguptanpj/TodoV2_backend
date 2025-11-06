@@ -24,7 +24,7 @@ const generateAccessandRefreshTokens = async (userId)=>{
 
 
 const registerUser = asyncHandler(async(req,res)=>{
-    const {firstName,lastName,username,password} = req.body
+    const {firstName,lastName,username,email,password} = req.body
 
     if([firstName,lastName,username,password].some((field)=>field?.trim()==="")
     ){
@@ -36,16 +36,17 @@ const registerUser = asyncHandler(async(req,res)=>{
     })
 
 
+      if(existedUser){
+        throw new ApiError(409,"User with email and or username already exists")
+    } 
+
     const user = await User.create({
   firstName,
   lastName,
   username,
+  email,
   password
 });
-
-    if(existedUser){
-        throw new ApiError(409,"User with email and or username already exists")
-    }
 
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
@@ -133,8 +134,8 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
 
     return res
     .status(200)
-    .cookie("refreshToken",accessToken,options)
-    .cookie("accessToken",newrefreshToken,options)
+    .cookie("accessToken",accessToken,options)
+    .cookie("refreshToken",newrefreshToken,options)
     .json(
         new ApiResponse(
             200,
