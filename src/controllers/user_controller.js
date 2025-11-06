@@ -5,7 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 
 
-const generateAccessandRefreshTokens = async (userId)=>{
+export const generateAccessandRefreshTokens = async (userId)=>{
     try{
         const user = await User.findById(userId)
         const accessToken = user.generateAccessToken()
@@ -23,7 +23,7 @@ const generateAccessandRefreshTokens = async (userId)=>{
 }
 
 
-const registerUser = asyncHandler(async(req,res)=>{
+export const registerUser = asyncHandler(async(req,res)=>{
     const {firstName,lastName,username,email,password} = req.body
 
     if([firstName,lastName,username,password].some((field)=>field?.trim()==="")
@@ -60,7 +60,7 @@ const registerUser = asyncHandler(async(req,res)=>{
 })
 
 
-const loginUser = asyncHandler(async(req,res)=>{
+export  const loginUser = asyncHandler(async(req,res)=>{
     const{email,username,password} = req.body
 
     if(!(username || email)){
@@ -104,7 +104,7 @@ const loginUser = asyncHandler(async(req,res)=>{
 
 })
 
-const refreshAccessToken = asyncHandler(async(req,res)=>{
+export const refreshAccessToken = asyncHandler(async(req,res)=>{
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
     if(!incomingRefreshToken) {throw new ApiError(401,"unauthorized request")
@@ -153,7 +153,7 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
 )
 
 
-const logoutUser = asyncHandler(async(req,res)=>{
+export const logoutUser = asyncHandler(async(req,res)=>{
   await   User.findByIdAndUpdate(
         req.user._id,
         {
