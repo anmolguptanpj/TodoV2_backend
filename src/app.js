@@ -5,7 +5,7 @@ import cors from "cors"
 const app = express()
 
 app.use(cors({
-    origin:process.env.CORS_ORIGIN,
+    origin:process.env.CORS_ORIGIN ||"http://localhost:5173",
     credentials:true
 }))
 
@@ -21,7 +21,7 @@ import todosRouter from './routes/todo.routes.js'
 
 //routes declaration
 app.use("/api/v1/users",userRouter)
-app.use("/api/v1/users",todosRouter)
+app.use("/api/v1/todos",todosRouter)
 
 
 export {app}
