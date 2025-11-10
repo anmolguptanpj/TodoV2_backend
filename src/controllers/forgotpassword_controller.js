@@ -3,7 +3,7 @@ import bcrypt from "bcrypt"
 import otpGenerator from "otp-generator"
 import {asyncHandler} from "../utils/AsyncHandler.js"
 import  {ApiResponse} from "../utils/ApiResponse.js"
-import  {ApiError} from "../utils/ApiResponse.js"
+import  {ApiError} from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
 
 export const sendResetOtp = asyncHandler(async(req,res)=>{
@@ -27,7 +27,7 @@ export const sendResetOtp = asyncHandler(async(req,res)=>{
         service:"gmail",
         auth:{
             user: process.env.SMTP_EMAIL,
-            pass: process.env.SMPTP_PASSWORD
+            pass: process.env.SMTP_PASSWORD
         }
     });
 
@@ -39,7 +39,7 @@ export const sendResetOtp = asyncHandler(async(req,res)=>{
       ` <div style = "font-family: Arial, sans-serif; color : #333">
             <h2>Hello ${user.firstName || "User"}</h2>
             <p>Your OTP for password reset is:</p>
-            <h1 style=" #007bff">${otp}</h1>
+            <h1 style="color: #007bff">${otp}</h1>
             <p>This OTP is valid for 10 minutes</p>
             <p>If you didnt request this. You can ignore this email.</p>
         </div>`
@@ -49,5 +49,44 @@ export const sendResetOtp = asyncHandler(async(req,res)=>{
 
 
     return res.status(200).json(new ApiResponse(200,{}, "OTP SENT TO EMAIL SUCCESSFULLY"))
+
+});
+
+
+
+export const verifyResetOtp = asyncHandler(async(req,res)=>{
+    const {email, otp} = req.body;
+    if(!email || !otp) throw new ApiError(400,"EMAIL AND OTP ARE REQUIRED");
+
+    const user = await User.findOne({email});
+    if(!user) throw new ApiError(404,"User not found");
+
+    if(user.resetPasswordOTP !== otp) throw new ApiError(400, "Invalid OTP");
+    if(Date.now()>user.resetPasswordExpires) throw new ApiError(400,"OTP HAS EXPIRED");
+
+    user.isOtpVerified = true;
+    await user.save({validateBeforeSave: false})
+
+    return res.status(200).json(new ApiResponse(200, {}, "OTP VERIFIED SUCCESSFULLY"));
+})
+
+
+export const resetPassword = asyncHandler(async(req,res)=>{
+    const{email,newPassword}=req.body;
+    if(!email || !newPassword) throw new ApiError(400,"Email and new password are required")
+
+    const user = await User.findOne({email});
+    if(!user) throw new ApiError(404,"User not found");
+    if(!user.isOtpVerified) throw new ApiError(400,"OTP Verification required");
+
+    //Hash new password
+    user.password = newPassword
+    user.resetPasswordOTP=undefined;
+    user.resetPasswordExpires=undefined;
+    user.isOtpVerified=false;
+
+    await user.save();
+
+    return res.status(200).json(new ApiResponse(200, {}, "Password reset successfully"));
 
 })
